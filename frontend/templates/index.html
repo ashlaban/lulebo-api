@@ -1,0 +1,117 @@
+<!doctype html>
+
+<html lang="en" class="full-size">
+<head>
+  <meta charset="utf-8">
+
+  <title>Lulebo cabin heater</title>
+  <meta name="description" content="">
+  <meta name="author" content="ashlban">
+  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/superagent/2.3.0/superagent.js" type="text/javascript" charset="utf-8" async defer></script>
+  <script src="static/js/client.js" type="text/javascript" charset="utf-8" async defer></script>
+
+  <style>
+  	@import 'https://fonts.googleapis.com/css?family=Open+Sans';
+
+  	* {
+  		font-family: 'Open Sans', sans-serif;
+  	}
+
+	body {
+	    background-color: linen;
+	}
+	.full-size {
+		height: 100%;
+		width : 100%;
+	}
+
+	.full-width {
+		width : 100%;
+	}
+
+	.text-box {
+		height: 30px;
+		font-size: 15px;
+		margin-bottom: 0.5em;
+
+		border-width: 0.5px;
+		border-radius: 10px;
+	}
+
+	.center {
+		display: flex;
+
+		align-items: center;
+  		justify-content: center;
+	}
+
+	.flow-vertical {
+		flex-direction: column;
+	}
+
+	.button {
+		background-color: darkgreen;
+
+		border-style: solid;
+		border-width: 1px;
+		border-radius: 10px;
+
+		font-size: 3vw;
+
+		width: 250px;
+	}
+
+	.action {
+		margin: 1em;
+	}
+
+	#response {
+		width: 200px;
+		min-height: 300px;
+	}
+	</style>
+</head>
+
+<body class="full-size center">
+	<div class="action center flow-vertical">
+		<textarea cols="50" id="response"></textarea>
+	</div>
+	<div class="action center flow-vertical">
+		<div class="button" onclick="send_lulebo_login()">Lulebo Login</div>
+		<div class="button" onclick="send_lulebo_object_info()">Object Info</div>
+		<div class="button" onclick="send_lulebo_object_status()">Object Status</div>
+		<div class="button" onclick="send_lulebo_direct_start()">Direktstart</div>
+	</div>
+	<div class="action center">
+		<div class="button" onclick="send_create_db()">Create DB</div>
+	</div>
+	<div class="action center flow-vertical">
+
+<!-- 		<form action="/login" method="post">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" class="form-control" name="username">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" class="form-control" name="password">
+        </div>
+
+        <button type="submit" class="btn btn-warning btn-lg">Login</button>
+    </form> -->
+
+		<input id='username'    class="text-box full-width" type="text"     name="" value="" placeholder="Username">
+		<input id='password'    class="text-box full-width" type="password" name="" value="" placeholder="Password">
+		<input id='lulebo_user' class="text-box full-width" type="text"     name="" value="" placeholder="Lulebo username">
+		<input id='lulebo_pass' class="text-box full-width" type="password" name="" value="" placeholder="Lulebo password">
+		<input id='email'       class="text-box full-width" type="email"    name="" value="" placeholder="example@domain.com">
+		<div class="button" onclick="send_login()">Log In</div>
+		<div class="button" onclick="send_user_create()">Create User</div>
+		<div class="button" onclick="send_user_exists()">User Exists</div>
+	</div>
+
+
+</body>
+</html>
