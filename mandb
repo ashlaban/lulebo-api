@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+
+# import argparse
+# db-manager add Kim Test 8901... aasdf
+# db-manager add --user Kim --pass Test --lulebo-user 8901... --lulebo-pass aasdf
+# db-manager find Kim
+# db-manager find --user Kim
+# db-manager find --lulebo-user Kim
+# db-manager rem Kim
+# db-manager rem --user Kim
+# db-manager rem --lulebo-user Kim
+# db-manager create
+# db-manager recreate
+# db-manager destroy
+
+import argparse
+import json
+
+parser = argparse.ArgumentParser(description='Manage database.')
+parser.add_argument('--foo', help='foo help')
+
+subparsers = parser.add_subparsers()
+
+parser_add = subparsers.add_parser('add', help='Add a user to the database')
+parser_add.add_argument('--username', help='Username to site')
+parser_add.add_argument('--password' , help='Password to site')
+parser_add.add_argument('--lulebo-username', help='Username for the Lulebo portal')
+parser_add.add_argument('--lulebo-password', help='Password for the Lulebo portal')
+parser_add.add_argument('--file' , help='Read arguments from a json file'
+		'{"username": ..., "lulebo-username": ..., ...}. If the input json '
+		'object is an array, all valid sub objects will be added.')
+parser_add.set_defaults(command='add')
+
+parser_find = subparsers.add_parser('find', help='Find a user in the database.')
+parser_find.add_argument('--username', help='Username to site')
+parser_find.add_argument('--lulebo-username', help='Password to site')
+parser_find.set_defaults(command='find')
+
+parser_rem = subparsers.add_parser('rem', help='Remove a user from the database.')
+parser_rem.add_argument('--username', help='Username to site')
+parser_rem.add_argument('--lulebo-username', help='Password to site')
+parser_rem.set_defaults(command='rem')
+
+parser_create = subparsers.add_parser('create', help='')
+parser_create.set_defaults(command='create')
+
+parser_recreate = subparsers.add_parser('recreate', help='')
+parser_recreate.set_defaults(command='recreate')
+
+parser_destroy = subparsers.add_parser('destroy', help='')
+parser_destroy.set_defaults(command='destroy')
+
+args = parser.parse_args()
+
+
+
+
+
+
+
+from app import db
+
+from app import models as user_models
+
+# from config import DB_PORT
+
+def add_user(user):
+	'''Add a user to the database
+	'''
+
+	username        = user['username']
+	password        = user['password']
+	email           = user['email']
+	lulebo_username = user['lulebo_username']
+	lulebo_password = user['lulebo_password']
+
+	print ('Add user ' + username + '')
+	try:
+		user_models.User.get_by_name(username)
+		print ('\tSkipping -- user _does_ exist.')
+		return False
+	except user_models.UserNotFoundError:
+		pass
+
+	try:
+		u = user_models.User(
+			username=username,
+			password=password,
+			email=email,
+			lulebo_username=lulebo_username,
+			lulebo_password=lulebo_password
+		)
+		db.session.add(u)
+		db.session.commit()
+	except Exception as e:
+		print (e)
+		print ('\tSkipping -- unknown error.')
+		return False
+
+	return True
+
+def db_create():
+	db.create_all()
+
+def db_destroy():
+	pass
+
+
+
+
+if args.command == 'add':
+	if args.username != None:
+		user = {
+			'username': args.username,
+			'password': args.password,
+			'email': '',
+			'lulebo_username': args.lulebo_username,
+			'lulebo_password': args.lulebo_password
+		}
+		add_user(user)
+	if args.file != None:
+		with open(args.file) as file:
+			users = json.load(file)
+
+			for user in users:
+				add_user(user)
+
+if args.command == 'list':
+	pass
+
+if args.command == 'find':
+	if args.username is not None:
+		user = user_models.User.get_by_name(args.username)
+		print('Found user:')
+		print('\tusername       : {}'.format(user.username))
+		print('\tlulebo-username: {}'.format(user.lulebo_username))
+	elif args.lulebo_username is not None:
+		print('Find by lulebo username not implemented yet.')
+	else:
+		print('Search for users using --username or --lulebo-username')
+
+if args.command == 'create':
+	db_create()
+
+if args.command == 'destroy':
+	db_destroy()
+
+if args.command == 'recreate':
+	db_destroy()
+	db_create()
+
+
+
+
+# # Set up db
+# ####################################################################
+# print()
+# print('Setting up db...')
+# print('='*80)
+# # import rethinkdb as r
+# # rethink_connection = r.connect( "localhost", RETHINK_DB_PORT)
+# # try:
+# # 	r.db_drop('planeshift').run(rethink_connection)
+# # except Exception:
+# # 	pass
+# # r.db_create('planeshift').run(rethink_connection)
+# # r.db("planeshift").table_create("planes").run(rethink_connection)
+
+# # Add test users
+# ####################################################################
+# print()
+# print('Adding users...')
+# print('='*80)
+# add_user('kim', 'test', 'test@test.com', None, None)

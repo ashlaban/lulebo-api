@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+import argparse
+
+
+parser = argparse.ArgumentParser(description='Manage servers')
+
+subparsers = parser.add_subparsers()
+
+parser_backend = subparsers.add_parser('backend', help='Add a user to the database')
+parser_backend.add_argument('--start', action='store_true', help='Start the backend server.')
+parser_backend.add_argument('--port', help='Override port given in config.py')
+parser_backend.set_defaults(command='backend')
+
+parser_frontend = subparsers.add_parser('frontend', help='Add a user to the database')
+parser_frontend.add_argument('--start', action='store_true', help='Start the frontend server.')
+parser_frontend.add_argument('--port', help='Override port given in config.py')
+parser_frontend.set_defaults(command='frontend')
+
+args = parser.parse_args()
+
+
+
+
+
+if args.command == 'backend':
+    from backend import backend
+    from config import WEB_PORT_BACKEND
+
+    print('Starting backend server on port {}'.format(WEB_PORT_BACKEND))
+    backend.run(port=WEB_PORT_BACKEND)
+
+if args.command == 'frontend':
+    from frontend import frontend
+    from config import WEB_PORT_FRONTEND
+
+    print('Starting frontend server on port {}'.format(WEB_PORT_FRONTEND))
+    frontend.run(port=WEB_PORT_FRONTEND)
