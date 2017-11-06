@@ -1,0 +1,9 @@
+# project
+initial-users.json
+
+# python
+__pycache__/
+*.pyc
+
+# macos
+.DS_Store
