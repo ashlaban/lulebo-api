@@ -4,9 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import basedir
 
-import wtforms_json
-wtforms_json.init()
-
 backend = Flask(__name__)
 backend.config.from_object('config')
 db = SQLAlchemy(backend)
