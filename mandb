@@ -13,41 +13,55 @@
 # db-manager recreate
 # db-manager destroy
 
+#
+# 
+#
+
 import argparse
 import json
 
 parser = argparse.ArgumentParser(description='Manage database.')
-parser.add_argument('--foo', help='foo help')
 
 subparsers = parser.add_subparsers()
 
 parser_add = subparsers.add_parser('add', help='Add a user to the database')
+parser_add.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_add.add_argument('--username', help='Username to site')
 parser_add.add_argument('--password' , help='Password to site')
 parser_add.add_argument('--lulebo-username', help='Username for the Lulebo portal')
 parser_add.add_argument('--lulebo-password', help='Password for the Lulebo portal')
 parser_add.add_argument('--file' , help='Read arguments from a json file'
-		'{"username": ..., "lulebo-username": ..., ...}. If the input json '
-		'object is an array, all valid sub objects will be added.')
+        '{"username": ..., "lulebo-username": ..., ...}. If the input json '
+        'object is an array, all valid sub objects will be added.')
 parser_add.set_defaults(command='add')
 
 parser_find = subparsers.add_parser('find', help='Find a user in the database.')
+parser_find.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_find.add_argument('--username', help='Username to site')
 parser_find.add_argument('--lulebo-username', help='Password to site')
 parser_find.set_defaults(command='find')
 
 parser_rem = subparsers.add_parser('rem', help='Remove a user from the database.')
+parser_rem.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_rem.add_argument('--username', help='Username to site')
 parser_rem.add_argument('--lulebo-username', help='Password to site')
 parser_rem.set_defaults(command='rem')
 
 parser_create = subparsers.add_parser('create', help='')
+parser_create.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_create.set_defaults(command='create')
 
+parser_init = subparsers.add_parser('init', help='')
+parser_init.add_argument('--db'  , default='app.db', help='Database name (default: app.db)')
+parser_init.add_argument('--type', default='prod', choices=['prod', 'test'], help='The kind of data to fill db with (default: prod)')
+parser_init.set_defaults(command='init')
+
 parser_recreate = subparsers.add_parser('recreate', help='')
+parser_recreate.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_recreate.set_defaults(command='recreate')
 
 parser_destroy = subparsers.add_parser('destroy', help='')
+parser_destroy.add_argument('--db', default='app.db', help='Database name (default: app.db)')
 parser_destroy.set_defaults(command='destroy')
 
 args = parser.parse_args()
@@ -57,97 +71,86 @@ args = parser.parse_args()
 
 
 
+from backend import db
+from backend import create_app
+from backend.util import add_user
 
-from app import db
+from backend.models import User
 
-from app import models as user_models
+from config import gen_db_path
 
-# from config import DB_PORT
+backend = create_app({'SQLALCHEMY_DATABASE_URI': gen_db_path(args.db)})
 
-def add_user(user):
-	'''Add a user to the database
-	'''
 
-	username        = user['username']
-	password        = user['password']
-	email           = user['email']
-	lulebo_username = user['lulebo_username']
-	lulebo_password = user['lulebo_password']
 
-	print ('Add user ' + username + '')
-	try:
-		user_models.User.get_by_name(username)
-		print ('\tSkipping -- user _does_ exist.')
-		return False
-	except user_models.UserNotFoundError:
-		pass
 
-	try:
-		u = user_models.User(
-			username=username,
-			password=password,
-			email=email,
-			lulebo_username=lulebo_username,
-			lulebo_password=lulebo_password
-		)
-		db.session.add(u)
-		db.session.commit()
-	except Exception as e:
-		print (e)
-		print ('\tSkipping -- unknown error.')
-		return False
-
-	return True
 
 def db_create():
-	db.create_all()
+    db.create_all()
 
 def db_destroy():
-	pass
+    db.session.remove()
+    db.drop_all()
 
+def db_init(db_type='prod'):
+    '''
+    `db_type` selects the kind of data to fill the database with. Valid values 
+    are `prod` and `test`.
+    '''
+    if db_type == 'prod':
+        # Do nothing for the production database.
+        pass
+    if db_type == 'test':
+        from backend.tests.test import default_user
+        add_user(db, default_user())
 
 
 
 if args.command == 'add':
-	if args.username != None:
-		user = {
-			'username': args.username,
-			'password': args.password,
-			'email': '',
-			'lulebo_username': args.lulebo_username,
-			'lulebo_password': args.lulebo_password
-		}
-		add_user(user)
-	if args.file != None:
-		with open(args.file) as file:
-			users = json.load(file)
+    if args.username != None:
+        user = {
+            'username': args.username,
+            'password': args.password,
+            'email': '',
+            'lulebo_username': args.lulebo_username,
+            'lulebo_password': args.lulebo_password
+        }
+        add_user(db, user)
+    if args.file != None:
+        with open(args.file) as file:
+            users = json.load(file)
 
-			for user in users:
-				add_user(user)
+            for user in users:
+                add_user(db, user)
 
 if args.command == 'list':
-	pass
+    pass
 
 if args.command == 'find':
-	if args.username is not None:
-		user = user_models.User.get_by_name(args.username)
-		print('Found user:')
-		print('\tusername       : {}'.format(user.username))
-		print('\tlulebo-username: {}'.format(user.lulebo_username))
-	elif args.lulebo_username is not None:
-		print('Find by lulebo username not implemented yet.')
-	else:
-		print('Search for users using --username or --lulebo-username')
+    if args.username is not None:
+        user = User.get_by_name(args.username)
+        print('Found user:')
+        print('\tusername       : {}'.format(user.username))
+        print('\tlulebo-username: {}'.format(user.lulebo_username))
+    elif args.lulebo_username is not None:
+        print('Find by lulebo username not implemented yet.')
+    else:
+        print('Search for users using --username or --lulebo-username')
 
 if args.command == 'create':
-	db_create()
+    print('Creating database {}...'.format(args.db))
+    db_create()
+
+if args.command == 'init':
+    print('Initialising database {} with {} data...'.format(args.db, args.type))
+    db_init(args.type)
 
 if args.command == 'destroy':
-	db_destroy()
+    db_destroy()
 
 if args.command == 'recreate':
-	db_destroy()
-	db_create()
+    db_destroy()
+    db_create()
 
 
 
@@ -160,9 +163,9 @@ if args.command == 'recreate':
 # # import rethinkdb as r
 # # rethink_connection = r.connect( "localhost", RETHINK_DB_PORT)
 # # try:
-# # 	r.db_drop('planeshift').run(rethink_connection)
+# #     r.db_drop('planeshift').run(rethink_connection)
 # # except Exception:
-# # 	pass
+# #     pass
 # # r.db_create('planeshift').run(rethink_connection)
 # # r.db("planeshift").table_create("planes").run(rethink_connection)
 

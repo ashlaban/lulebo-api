@@ -27,8 +27,10 @@ args = parser.parse_args()
 
 
 if args.command == 'backend' and args.start:
-    from backend import backend
+    from backend import create_app, db
     from config import WEB_PORT_BACKEND
+
+    backend = create_app()
 
     print('Starting backend server on port {}'.format(WEB_PORT_BACKEND))
     backend.run(port=WEB_PORT_BACKEND)

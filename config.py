@@ -1,5 +1,9 @@
 import os
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+def gen_db_path(db_name):
+    return 'sqlite:///' + os.path.join(basedir, db_name) + '.db'
 
 WTF_CSRF_ENABLED = False
 
@@ -14,7 +18,7 @@ DEBUG_MODE = False
 LOG_FILE = ''
 LOG_LEVEL = 'info'
 
-SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
+SQLALCHEMY_DATABASE_URI = gen_db_path('app')
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')
 
 # To disable warning about "significant overhead added by this feature".
