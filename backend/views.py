@@ -49,16 +49,19 @@ def signup():
 
 @backend_api.route('/login', methods=['POST'])
 def login():
-    print (dir(request))
-    print (request.get_data())
-    print (request.get_json())
     json_data = request.get_json()
 
     if json_data is None:
         return util.make_json_error(msg='No credentials provided')
 
-    # TODO: Validation
-    # TODO: Password check
+    try   : username = json_data['username']
+    except: return util.make_json_error(msg='Missing username')
+    try   : password = json_data['password']
+    except: return util.make_json_error(msg='Missing password')
+
+    if not User.authenticate(username, password):
+        return util.make_json_error(msg='Wrong username and/or password')
+
     try:
         user = User.get_by_name(json_data['username'])
         login_user(user)
@@ -78,10 +81,9 @@ def say_hi():
     return util.make_json_success(msg='Hello!')
 
 
-@backend_api.route('/logged-in-hi')
+@backend_api.route('/secret-hi')
 @login_required
-def logged_in_say_hi():
-    print (current_user)
+def say_secret_hi():
     return util.make_json_success(msg='Hello! (Logged in)')
     
 

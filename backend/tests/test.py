@@ -25,6 +25,20 @@ class MyTestJSON(TestCase):
     This is for the cases where the pre-populated test database is sufficient.
     '''
 
+    def post_json(self, url, **kwargs):
+        '''
+        Keyword arguments:
+        data         : dict (or compatible object)
+        content_type : will be set to json if not provided
+        '''
+        try   : kwargs['content_type']
+        except: kwargs['content_type'] = 'application/json'
+        
+        try    : kwargs['data'] = json.dumps(kwargs['data'])
+        except : pass
+        
+        return self.client.post(url, **kwargs)
+
     def create_app(self):
         config = {
             'SQLALCHEMY_DATABASE_URI': gen_db_path('test'),
@@ -32,13 +46,50 @@ class MyTestJSON(TestCase):
         }
         return create_app(config)
 
+    def test_hi(self):
+        response = self.client.get('/hi')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, dict(msg='Hello!', status='ok'))
+
+    def test_secret_hi(self):
+        response = self.client.get('/secret-hi')
+        self.assertEqual(response.status_code, 401)
+
     def test_login(self):
-        payload=dict(username='test_user', password='test_pass')
-        response = self.client.post('/login', data=json.dumps(payload), content_type='application/json')
-        print('response', response)
+        payload = dict(username='test_user', password='test_pass')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, dict(msg='Success', status='ok'))
 
+        payload = dict(username='test_user', password='wrong_pass')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Wrong username and/or password', status='error'))
 
+        payload = dict(username='wrong_user', password='test_pass')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Wrong username and/or password', status='error'))
+
+        payload = dict(username='test_user', password='')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Wrong username and/or password', status='error'))
+
+        payload = dict(username='', password='')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Wrong username and/or password', status='error'))
+
+        payload = dict(password='test_pass')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Missing username', status='error'))
+
+        payload = dict(username='test_user')
+        response = self.post_json('/login', data=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json, dict(msg='Missing password', status='error'))
 
 
 
