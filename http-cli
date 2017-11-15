@@ -381,7 +381,7 @@ elif args.method is None:
 
 kwargs = dict()
 if args.json:
-    kwargs['json']=json.dumps(args.json)
+    kwargs['json']=json.loads(args.json)
 
 r = get_method(args.method)(args.url, **kwargs)
 print_response(r)
