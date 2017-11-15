@@ -7,7 +7,7 @@ from config import basedir
 db = SQLAlchemy()
 lm = LoginManager()
 
-lm.login_view = 'login'
+# lm.login_view = 'login'
 
 def create_app(config=None, name=__name__):
     app = Flask(name)

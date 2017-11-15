@@ -26,7 +26,7 @@ def load_user(id):
     return User.query.get(int(id))
 
 @backend_api.route('/signup', methods=['POST'])
-def api_signup():
+def signup():
     json_data = request.get_json()
     user = User(
         username = json_data['uesrname'],
@@ -71,6 +71,19 @@ def login():
 def logout():
     logout_user()
     return util.make_json_success(msg='Logged out')
+
+
+@backend_api.route('/hi')
+def say_hi():
+    return util.make_json_success(msg='Hello!')
+
+
+@backend_api.route('/logged-in-hi')
+@login_required
+def logged_in_say_hi():
+    print (current_user)
+    return util.make_json_success(msg='Hello! (Logged in)')
+    
 
 
 
