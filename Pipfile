@@ -13,6 +13,7 @@ werkzeug = "*"
 sqlalchemy = "*"
 flask-sqlalchemy = "*"
 requests = "*"
+flask-testing = "*"
 
 
 [requires]
