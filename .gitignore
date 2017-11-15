@@ -1,4 +1,5 @@
 # project
+log/
 initial-users.json
 *.db
 
