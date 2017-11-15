@@ -3,6 +3,7 @@
 import argparse
 import json
 import requests
+import textwrap
 
 # 
 # Information about status codes taken from
@@ -365,14 +366,28 @@ def get_method(method_name):
 
 parser = argparse.ArgumentParser(description='')
 
-parser.add_argument('url' )
+parser.add_argument('url', nargs='?')
 parser.add_argument('json', default=None, nargs='?')
 parser.add_argument('--method', choices=['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace', 'connect'], default=None)
 parser.add_argument('--headers', action='store_true')
-parser.add_argument('--status-code', action='store_true')
-parser.add_argument('--status-code-ext', action='store_true')
+parser.add_argument('-i', '--status-code-info', default=None)
+parser.add_argument('-s', '--status-code'    , action='store_true')
+parser.add_argument('-S', '--status-code-ext', action='store_true')
 
 args = parser.parse_args()
+
+if args.status_code_info is not None:
+    try:
+        info = status_codes[int(args.status_code_info)]
+        print()
+        print( '{} {}'.format(args.status_code_info, info['name']) )
+        print()
+        print( '{}'.format(textwrap.fill(info['description'], 80)) )
+    except ValueError:
+        print("ERROR: {} is not a valid status code; Submit integer".format(args.status_code_info))
+    except KeyError:
+        print("ERROR: {} is not a valid status code".format(args.status_code_info))
+    exit(0)
 
 if args.json and args.method is None:
     args.method = 'post'
