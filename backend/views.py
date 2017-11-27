@@ -6,8 +6,9 @@ from .models import User
 from backend import util
 from backend.models import UserNotFoundError
 
-import werkzeug
 import sqlalchemy
+import uuid
+import werkzeug
 
 from luleboapi import LuleboApi
 
@@ -28,21 +29,49 @@ def load_user(id):
 @backend_api.route('/signup', methods=['POST'])
 def signup():
     json_data = request.get_json()
-    user = User(
-        username = json_data['uesrname'],
-        email    = json_data['email'],
-        password = json_data['password']
-    )
 
     # TODO: Validation
+    try   : username = json_data['username']
+    except: return util.make_json_error(msg='Missing username')
+    try   : email = json_data['email']
+    except: return util.make_json_error(msg='Missing email')
+    try   : password = json_data['password']
+    except: return util.make_json_error(msg='Missing password')
+    try   : passvalid = json_data['passvalid']
+    except: return util.make_json_error(msg='Missing password validation')
+
+    # Validation
+    if password != passvalid:
+        return util.make_json_error(msg='Passwords don\'t match')
+
+    try:
+        User.get_by_name(username)
+        return util.make_json_error(msg='User "{}" already registered'.format(username))
+    except: pass
+
+    try:
+        User.get_by_email(email)
+        return util.make_json_error(msg='Email already registered')
+    except: pass
+
+    # All checks passed, create user
+    user = User(
+        username  = username ,
+        email     = email    ,
+        password  = password ,
+        lulebo_username = '' ,
+        lulebo_password = '' ,
+        uuid = str(uuid.uuid4())
+    )
 
     try:
         db.session.add(user)
         db.session.commit()
-        msg = 'success'
+        msg = 'Success'
         status = 'ok'
-    except:
-        msg = 'this user is already registered'
+    except Exception as e:
+        print(e)
+        msg = 'unknown error'
         status = 'error'
     db.session.close()
     return jsonify({'msg': msg, 'status': status})

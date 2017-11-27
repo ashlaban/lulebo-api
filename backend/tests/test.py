@@ -3,6 +3,7 @@ from flask_testing import TestCase
 
 import os
 import json
+import uuid
 
 import backend.util
 
@@ -10,6 +11,8 @@ from config import gen_db_path
 
 from backend import create_app
 from backend import db
+
+from backend.models import User
 
 def default_user():
     return {
@@ -90,6 +93,17 @@ class MyTestJSON(TestCase):
         response = self.post_json('/login', data=payload)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json, dict(msg='Missing password', status='error'))
+
+    def test_signup(self):
+        username = str(uuid.uuid4())
+        payload = dict(username=username, password='test_pass', email='{}@test.com'.format(username), passvalid='test_pass')
+        response = self.post_json('/signup', data=payload)
+        print (response.json)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, dict(msg='Success', status='ok'))
+
+        user = User.get_by_name(username)
+        self.assertEqual(user.username, username)
 
 
 
