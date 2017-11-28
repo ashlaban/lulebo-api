@@ -50,6 +50,13 @@ class User(db.Model):
         return user
 
     @staticmethod
+    def get_by_uuid(uuid):
+        user = User.query.filter_by(uuid=uuid).first()
+        if user is None:
+            raise UserNotFoundError()
+        return user
+
+    @staticmethod
     def exists(name):
         try:
             user = User.get_by_name(name)

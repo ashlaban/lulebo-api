@@ -80,17 +80,17 @@ def signup():
 def login():
     json_data = request.get_json()
 
-    if json_data is None:
+    if json_data is None or json_data is '':
         return util.make_json_error(msg='No credentials provided')
-
+    
     try   : username = json_data['username']
     except: return util.make_json_error(msg='Missing username')
     try   : password = json_data['password']
     except: return util.make_json_error(msg='Missing password')
-
+    
     if not User.authenticate(username, password):
         return util.make_json_error(msg='Wrong username and/or password')
-
+    
     try:
         user = User.get_by_name(json_data['username'])
         login_user(user)
@@ -115,7 +115,43 @@ def say_hi():
 def say_secret_hi():
     return util.make_json_success(msg='Hello! (Logged in)')
     
+# Gives info about user object
+@backend_api.route('/u')
+@login_required
+def user_info():
+    '''
+    Test by 
+        `wget -qO- http://localhost:8081/login              \
+        --save-cookies c.txt                                \
+        --post-data '{"username":"kim", "password":"pass"}' \
+        --header="Content-Type: application/json"           \
+        --keep-session-cookie`
 
+        `wget -qO- --load-cookies c.txt http://localhost:8081/u`
+    '''
+    print('/u', current_user)
+
+    data = {
+        'username': current_user.username,
+        'email':current_user.email,
+        'uuid':current_user.uuid
+    }
+
+    return util.make_json_success(msg='', data=data)
+
+# Gives loginless access to certain commands
+@backend_api.route('/u/<user_uuid>')
+def user_uuid(user_uuid):
+    print('/u/', user_uuid)
+    user = User.get_by_uuid(user_uuid)
+    return util.make_json_success(msg='', data={'username':user.username})
+
+@backend_api.route('/u/<user_uuid>/direct-start/<time>')
+def user_direct_start(user_uuid):
+    '''Direct-start of engine header
+    '''
+    user = User.get_by_uuid(user_uuid)
+    return {'username':user.username}
 
 
 
