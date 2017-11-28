@@ -6,9 +6,12 @@ from .models import User
 from backend import util
 from backend.models import UserNotFoundError
 
+import base64
 import sqlalchemy
 import uuid
 import werkzeug
+
+from werkzeug.wrappers import AuthorizationMixin
 
 from luleboapi import LuleboApi
 
@@ -76,27 +79,31 @@ def signup():
     db.session.close()
     return jsonify({'msg': msg, 'status': status})
 
-@backend_api.route('/login', methods=['POST'])
+@backend_api.route('/login', methods=['GET', 'POST'])
 def login():
-    json_data = request.get_json()
 
-    if json_data is None or json_data is '':
-        return util.make_json_error(msg='No credentials provided')
+    if request.method == 'GET':
+        user_dict = request.authorization
+    elif request.method == 'POST':
+        user_dict = request.get_json()
+
+    if user_dict is None or user_dict is '':
+        return util.make_auth_challenge(msg='No credentials provided')
     
-    try   : username = json_data['username']
-    except: return util.make_json_error(msg='Missing username')
-    try   : password = json_data['password']
-    except: return util.make_json_error(msg='Missing password')
+    try   : username = user_dict['username']
+    except: return util.make_json_error(msg='Missing username', error_code=401)
+    try   : password = user_dict['password']
+    except: return util.make_json_error(msg='Missing password', error_code=401)
     
     if not User.authenticate(username, password):
-        return util.make_json_error(msg='Wrong username and/or password')
+        return util.make_json_error(msg='Wrong username and/or password', error_code=401)
     
     try:
-        user = User.get_by_name(json_data['username'])
+        user = User.get_by_name(user_dict['username'])
         login_user(user)
         return util.make_json_success(msg='Success')
     except UserNotFoundError as e:
-        return util.make_json_error(msg='User not found')
+        return util.make_json_error(msg='User not found', error_code=401)
     
 @login_required
 @backend_api.route('/logout')
@@ -120,16 +127,31 @@ def say_secret_hi():
 @login_required
 def user_info():
     '''
-    Test by 
-        `wget -qO- http://localhost:8081/login              \
+    Login by
+        ```
+        wget -qO- http://localhost:8081/login               \
         --save-cookies c.txt                                \
         --post-data '{"username":"kim", "password":"pass"}' \
         --header="Content-Type: application/json"           \
-        --keep-session-cookie`
+        --keep-session-cookie
+        ```
+        or
+        ```
+        wget -S -qO- http://kim:pass@localhost:8081/login \
+        --save-cookies c.txt                              \
+        --keep-session-cookie
+        ```
+        Test this resource with
+        ```
+        wget -qO- --load-cookies c.txt http://localhost:8081/u
+        ```
+        or
+        ```
+        wget -S -qO- http://kim:pass@localhost:8081/login \
+        http://localhost:8081/u
+        ```
 
-        `wget -qO- --load-cookies c.txt http://localhost:8081/u`
     '''
-    print('/u', current_user)
 
     data = {
         'username': current_user.username,

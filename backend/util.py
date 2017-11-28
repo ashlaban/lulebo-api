@@ -2,6 +2,13 @@ import collections
 import json
 import werkzeug
 
+from flask import Response
+
+def make_auth_challenge(msg='Authentication required'):
+    status_code = 401
+    headers =  {'WWW-Authenticate': 'Basic realm="Login Required"'}
+    return Response(msg, status_code, headers)
+
 def make_json_error(msg='', error_code=400):
     response = {
         'status': 'error',
