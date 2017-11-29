@@ -14,6 +14,8 @@ import werkzeug
 from werkzeug.wrappers import AuthorizationMixin
 
 from luleboapi import LuleboApi
+from luleboapi import LuleboApiError
+from luleboapi import LuleboApiLoginError
 
 
 
