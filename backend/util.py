@@ -48,6 +48,36 @@ def html_escape_or_none(item):
 
 
 
+# ==============================================================================
+# === Lulebo
+# ==============================================================================
+
+def lulebo_retry_unauth(func):
+    '''
+    Takes a `lulebo_unauth_xxx` endpoint function and ensures a retry if the
+    stored session id is non-exitant or stale.
+
+    A `lulebo_unauth_xxx` is a function that takes a user uuid and returns a
+    lulebo response json object with the, for this function relevant, property
+    that key `response.d.loginStatus` is defined. A value of `"zilch"` for this
+    key indicated that unauthenticated access was done and this decorated then
+    retries the original function after attempting to log in one.
+
+    Arguments:
+    - func -- a `lulebo_unauth_xxx` or compatible function
+    '''
+
+    def f(user_uuid):
+        json_str, status_code = func(user_uuid)
+        json_obj = json.loads(json_str)
+
+        if json_obj['data']['loginStatus'] == 'zilch':
+            lulebo_login_unauth(user_uuid)
+            return func(user_uuid)
+        return json_str, status_code
+    f.__name__=func.__name__
+    return f
+
 
 # ==============================================================================
 # === Database

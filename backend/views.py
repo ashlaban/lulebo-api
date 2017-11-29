@@ -198,13 +198,13 @@ def user_info():
     return util.make_json_success(msg='', data=data)
 
 # Gives loginless access to certain commands
-@backend_api.route('/u/<user_uuid>')
+@backend_api.route('/u/<uuid:user_uuid>')
 def user_uuid(user_uuid):
     print('/u/', user_uuid)
-    user = User.get_by_uuid(user_uuid)
+    user = User.get_by_uuid(str(user_uuid))
     return util.make_json_success(msg='', data={'username':user.username})
 
-@backend_api.route('/u/<user_uuid>/direct-start/<time>')
+@backend_api.route('/u/<uuid:user_uuid>/direct-start/<time>')
 def user_direct_start(user_uuid, time):
     '''Direct-start of engine header
     '''
@@ -213,8 +213,9 @@ def user_direct_start(user_uuid, time):
     # TODO: retrieve lulebo login
     # TODO: send lulebo request
 
-    user = User.get_by_uuid(user_uuid)
+    user = User.get_by_uuid(str(user_uuid))
     return {'username':user.username}
+
 
 
 
@@ -223,6 +224,7 @@ def user_direct_start(user_uuid, time):
 # ==============================================================================
 # === Lulebo
 # ==============================================================================
+
 
 @backend_api.route('/lulebo/login')
 @login_required
@@ -294,3 +296,91 @@ def lulebo_direct_start():
     return util.make_json_success(data=data)
 
 
+
+
+
+
+# ==============================================================================
+# === Lulebo -- Unauthenticated
+# ==============================================================================
+
+@backend_api.route('/u/<uuid:user_uuid>/login')
+def lulebo_login_unauth(user_uuid):
+    '''
+    Logs a user (authenticated to site already) into LuleboAPI and stores the
+    associated session key in the database.
+    '''
+    user = User.get_by_uuid(str(user_uuid))
+
+    username = user.lulebo_username
+    password = user.lulebo_password
+
+    try:
+        session_id = LuleboApi.Login.login(username, password)
+    except LuleboApiLoginError as e:
+        return util.make_json_error(
+            msg='Lulebo authentication failed with message {}'.format(e.msg),
+            error_code='login-1'
+        )
+
+    user.lulebo_session_id = session_id
+
+    try:
+        db.session.add(user)
+        db.session.commit()
+        db.session.close()
+        return util.make_json_success('Logged in to LuleboAPI')
+    except Exception as e:
+        db.session.rollback()
+        db.session.close()
+        return util.make_json_error('Lulebo authentication failed', error_code='login-2')
+
+@backend_api.route('/u/<uuid:user_uuid>/session-info')
+@util.lulebo_retry_unauth
+def lulebo_session_info_unauth(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+
+    r = LuleboApi.Session.getSessionStatus(user.lulebo_session_id)
+    data = r.json()['d']
+
+    return util.make_json_success(data=data)
+
+@backend_api.route('/u/<uuid:user_uuid>/site-info')
+@util.lulebo_retry_unauth
+def lulebo_site_info_unauth(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+
+    r = LuleboApi.MV.getSiteInfo(user.lulebo_session_id)
+    data = r.json()['d']
+
+    return util.make_json_success(data=data)
+
+@backend_api.route('/u/<uuid:user_uuid>/object-info')
+@util.lulebo_retry_unauth
+def lulebo_object_info_unauth(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+
+    r = LuleboApi.MV.getObjectInfo(user.lulebo_session_id)
+    data = r.json()['d']
+
+    return util.make_json_success(data=data)
+
+@backend_api.route('/u/<uuid:user_uuid>/object-status')
+@util.lulebo_retry_unauth
+def lulebo_object_status_unauth(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+
+    r = LuleboApi.MV.queryObjectStatus(user.lulebo_session_id)
+    data = r.json()['d']
+
+    return util.make_json_success(data=data)
+
+@backend_api.route('/u/<uuid:user_uuid>/direct-start')
+@util.lulebo_retry_unauth
+def lulebo_direct_start_unauth(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+
+    r = LuleboApi.MV.directStartObject(user.lulebo_session_id)
+    data = r.json()['d']
+
+    return util.make_json_success(data=data)
