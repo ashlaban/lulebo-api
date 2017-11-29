@@ -9,23 +9,31 @@ def make_auth_challenge(msg='Authentication required'):
     headers =  {'WWW-Authenticate': 'Basic realm="Login Required"'}
     return Response(msg, status_code, headers)
 
-def make_json_error(msg='', error_code=400):
+def make_json_error(msg='', status_code=400, error_code=''):
     response = {
-        'status': 'error',
-        'msg'   : msg,
+        'status'     : 'error',
+        'error_code' : error_code,
+        'msg'        : msg,
     }
-    return json.dumps(response), error_code
 
-def make_json_success(data=None, msg=''):
+    # return jsonify(response), status_code
+    return json.dumps(response), status_code
+
+def make_json_success(data=None, msg='', status_code=200, error_code=''):
+    # TODO: make_json_success(msg='', data=None, status_code=200, error_code='')
     response = {
             'status': 'ok',
             'msg'   : msg,
         }
 
+    if error_code is not '':
+        response['error_code'] = error_code
+
     if data is not None:
         response['data'] = data
 
-    return json.dumps(response)
+    # return jsonify(response), status_code
+    return json.dumps(response), status_code
 
 def parse_request_to_json(req):
     args = req.get_json()

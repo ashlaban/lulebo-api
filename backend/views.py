@@ -93,19 +93,19 @@ def login():
         return util.make_auth_challenge(msg='No credentials provided')
     
     try   : username = user_dict['username']
-    except: return util.make_json_error(msg='Missing username', error_code=401)
+    except: return util.make_json_error(msg='Missing username', status_code=401)
     try   : password = user_dict['password']
-    except: return util.make_json_error(msg='Missing password', error_code=401)
+    except: return util.make_json_error(msg='Missing password', status_code=401)
     
     if not User.authenticate(username, password):
-        return util.make_json_error(msg='Wrong username and/or password', error_code=401)
+        return util.make_json_error(msg='Wrong username and/or password', status_code=401)
     
     try:
         user = User.get_by_name(user_dict['username'])
         login_user(user)
         return util.make_json_success(msg='Success')
     except UserNotFoundError as e:
-        return util.make_json_error(msg='User not found', error_code=401)
+        return util.make_json_error(msg='User not found', status_code=401)
     
 @login_required
 @backend_api.route('/logout')
