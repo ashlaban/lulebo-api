@@ -31,6 +31,28 @@ backend_api = Blueprint('backend', __name__)
 def load_user(id):
     return User.query.get(int(id))
 
+@lm.request_loader
+def load_user_request(id):
+    user_dict = request.authorization
+
+    if user_dict is None or user_dict is '':
+        return None
+
+    try   : username = user_dict['username']
+    except: return None
+    try   : password = user_dict['password']
+    except: return None
+    
+    if not User.authenticate(username, password):
+        return None
+    
+    try:
+        user = User.get_by_name(user_dict['username'])
+        login_user(user)
+        return user
+    except UserNotFoundError as e:
+        return None
+
 @backend_api.route('/signup', methods=['POST'])
 def signup():
     json_data = request.get_json()
