@@ -233,7 +233,7 @@ def user_direct_start(user_uuid, time):
 
 
 # ==============================================================================
-# === Lulebo
+# === Lulebo-local
 # ==============================================================================
 
 def lulebo_login(user):
@@ -294,7 +294,7 @@ def lulebo_direct_start(session_id):
 
 
 # ==============================================================================
-# === Lulebo -- Authenticated
+# === Lulebo-local -- Authenticated
 # ==============================================================================
 
 @backend_api.route('/lulebo/login')
@@ -332,7 +332,7 @@ def lulebo_auth_direct_start():
 
 
 # ==============================================================================
-# === Lulebo -- Unauthenticated
+# === Lulebo-local -- Unauthenticated
 # ==============================================================================
 
 @backend_api.route('/u/<uuid:user_uuid>/login')
