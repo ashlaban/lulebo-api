@@ -117,6 +117,9 @@ class LuleboMvApi(object):
     @staticmethod
     def directStartObject(session_id):
         '''
+            response object:
+                "loginStatus": "zilch" -> user not logged in (session inactive)
+
             var Runtime = json.d['Runtime'];
             var RCDStatusString = "";
 
