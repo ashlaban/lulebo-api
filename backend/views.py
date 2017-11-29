@@ -1,9 +1,11 @@
 from flask import session, request, jsonify, Blueprint
 from flask_login import login_user, logout_user, current_user, login_required
-from backend import db, lm
-from .models import User
 
+from backend import db
+from backend import lm
 from backend import util
+
+from backend.models import User
 from backend.models import UserNotFoundError
 
 import base64
@@ -12,10 +14,6 @@ import uuid
 import werkzeug
 
 from werkzeug.wrappers import AuthorizationMixin
-
-from luleboapi import LuleboApi
-from luleboapi import LuleboApiError
-from luleboapi import LuleboApiLoginError
 
 
 
@@ -227,67 +225,6 @@ def user_direct_start(user_uuid, time):
 
     user = User.get_by_uuid(str(user_uuid))
     return {'username':user.username}
-
-
-
-
-
-# ==============================================================================
-# === Lulebo-local
-# ==============================================================================
-
-def lulebo_login(user):
-    '''
-    Logs a user (authenticated to site already) into LuleboAPI and stores the
-    associated session key in the database.
-    '''
-    username = user.lulebo_username
-    password = user.lulebo_password
-
-    try:
-        session_id = LuleboApi.Login.login(username, password)
-    except LuleboApiLoginError as e:
-        return util.make_json_error(
-            msg='Lulebo authentication failed with message {}'.format(e.msg),
-            error_code='login-1'
-        )
-
-    user.lulebo_session_id = session_id
-
-    try:
-        db.session.add(user)
-        db.session.commit()
-        db.session.close()
-        return util.make_json_success('Logged in to LuleboAPI')
-    except Exception as e:
-        db.session.rollback()
-        db.session.close()
-        return util.make_json_error('Lulebo authentication failed', error_code='login-2')
-
-def lulebo_session_info(session_id):
-    r = LuleboApi.Session.getSessionStatus(session_id)
-    data = r.json()['d']
-    return util.make_json_success(data=data)
-
-def lulebo_site_info(session_id):
-    r = LuleboApi.MV.getSiteInfo(session_id)
-    data = r.json()['d']
-    return util.make_json_success(data=data)
-
-def lulebo_object_info(session_id):
-    r = LuleboApi.MV.getObjectInfo(session_id)
-    data = r.json()['d']
-    return util.make_json_success(data=data)
-
-def lulebo_object_status(session_id):
-    r = LuleboApi.MV.queryObjectStatus(session_id)
-    data = r.json()['d']
-    return util.make_json_success(data=data)
-
-def lulebo_direct_start(session_id):
-    r = LuleboApi.MV.directStartObject(session_id)
-    data = r.json()['d']
-    return util.make_json_success(data=data)
     
     
     
@@ -300,32 +237,32 @@ def lulebo_direct_start(session_id):
 @backend_api.route('/lulebo/login')
 @login_required
 def lulebo_auth_login():
-    return lulebo_login(current_user)
+    return util.lulebo_login(current_user)
 
 @backend_api.route('/lulebo/session-info')
 @login_required
 def lulebo_auth_session_info():
-    return lulebo_session_info(current_user.lulebo_session_id)
+    return util.lulebo_session_info(current_user.lulebo_session_id)
 
 @backend_api.route('/lulebo/site-info')
 @login_required
 def lulebo_auth_site_info():
-    return lulebo_site_info(current_user.lulebo_session_id)
+    return util.lulebo_site_info(current_user.lulebo_session_id)
 
 @backend_api.route('/lulebo/object-info')
 @login_required
 def lulebo_auth_object_info():
-    return lulebo_object_info(current_user.lulebo_session_id)
+    return util.lulebo_object_info(current_user.lulebo_session_id)
 
 @backend_api.route('/lulebo/object-status')
 @login_required
 def lulebo_auth_object_status():
-    return lulebo_object_status(current_user.lulebo_session_id)
+    return util.lulebo_object_status(current_user.lulebo_session_id)
 
 @backend_api.route('/lulebo/direct-start')
 @login_required
 def lulebo_auth_direct_start():
-    return lulebo_direct_start(current_user.lulebo_session_id)
+    return util.lulebo_direct_start(current_user.lulebo_session_id)
 
 
 
@@ -338,34 +275,34 @@ def lulebo_auth_direct_start():
 @backend_api.route('/u/<uuid:user_uuid>/login')
 def lulebo_unauth_login(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_login(user)
+    return util.lulebo_login(user)
 
 @backend_api.route('/u/<uuid:user_uuid>/session-info')
 @util.lulebo_retry_unauth
 def lulebo_unauth_session_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_session_info(user.lulebo_session_id)
+    return util.lulebo_session_info(user.lulebo_session_id)
 
 @backend_api.route('/u/<uuid:user_uuid>/site-info')
 @util.lulebo_retry_unauth
 def lulebo_unauth_site_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_site_info(user.lulebo_session_id)
+    return util.lulebo_site_info(user.lulebo_session_id)
 
 @backend_api.route('/u/<uuid:user_uuid>/object-info')
 @util.lulebo_retry_unauth
 def lulebo_unauth_object_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_object_info(user.lulebo_session_id)
+    return util.lulebo_object_info(user.lulebo_session_id)
 
 @backend_api.route('/u/<uuid:user_uuid>/object-status')
 @util.lulebo_retry_unauth
 def lulebo_unauth_object_status(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_object_status(user.lulebo_session_id)
+    return util.lulebo_object_status(user.lulebo_session_id)
 
 @backend_api.route('/u/<uuid:user_uuid>/direct-start')
 @util.lulebo_retry_unauth
 def lulebo_unauth_direct_start(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return lulebo_direct_start(user.lulebo_session_id)
+    return util.lulebo_direct_start(user.lulebo_session_id)

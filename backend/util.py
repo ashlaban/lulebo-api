@@ -49,8 +49,17 @@ def html_escape_or_none(item):
 
 
 # ==============================================================================
-# === Lulebo
+# === Lulebo-local
 # ==============================================================================
+
+from backend import db
+
+from backend.models import User
+from backend.models import UserNotFoundError
+
+from luleboapi import LuleboApi
+from luleboapi import LuleboApiError
+from luleboapi import LuleboApiLoginError
 
 def lulebo_retry_unauth(func):
     '''
@@ -72,11 +81,68 @@ def lulebo_retry_unauth(func):
         json_obj = json.loads(json_str)
 
         if json_obj['data']['loginStatus'] == 'zilch':
-            lulebo_login_unauth(user_uuid)
+            user = User.get_by_uuid(str(user_uuid))
+            lulebo_login(user)
             return func(user_uuid)
         return json_str, status_code
     f.__name__=func.__name__
     return f
+
+def lulebo_login(user):
+    '''
+    Logs a user (authenticated to site already) into LuleboAPI and stores the
+    associated session key in the database.
+    '''
+    username = user.lulebo_username
+    password = user.lulebo_password
+
+    try:
+        session_id = LuleboApi.Login.login(username, password)
+    except LuleboApiLoginError as e:
+        return make_json_error(
+            msg='Lulebo authentication failed with message {}'.format(e.msg),
+            error_code='login-1'
+        )
+
+    user.lulebo_session_id = session_id
+
+    try:
+        db.session.add(user)
+        db.session.commit()
+        db.session.close()
+        return make_json_success('Logged in to LuleboAPI')
+    except Exception as e:
+        db.session.rollback()
+        db.session.close()
+        return make_json_error('Lulebo authentication failed', error_code='login-2')
+
+def lulebo_session_info(session_id):
+    r = LuleboApi.Session.getSessionStatus(session_id)
+    data = r.json()['d']
+    return make_json_success(data=data)
+
+def lulebo_site_info(session_id):
+    r = LuleboApi.MV.getSiteInfo(session_id)
+    data = r.json()['d']
+    return make_json_success(data=data)
+
+def lulebo_object_info(session_id):
+    r = LuleboApi.MV.getObjectInfo(session_id)
+    data = r.json()['d']
+    return make_json_success(data=data)
+
+def lulebo_object_status(session_id):
+    r = LuleboApi.MV.queryObjectStatus(session_id)
+    data = r.json()['d']
+    return make_json_success(data=data)
+
+def lulebo_direct_start(session_id):
+    r = LuleboApi.MV.directStartObject(session_id)
+    data = r.json()['d']
+    return make_json_success(data=data)
+
+
+
 
 
 # ==============================================================================
