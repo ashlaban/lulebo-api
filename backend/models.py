@@ -14,8 +14,9 @@ class User(db.Model):
     password = db.Column(db.String(160) , unique=False)
     email    = db.Column(db.String(120) , unique=True)
 
-    lulebo_username = db.Column(db.String(120))
-    lulebo_password = db.Column(db.String(120))
+    lulebo_username   = db.Column(db.String(120))
+    lulebo_password   = db.Column(db.String(120))
+    lulebo_session_id = db.Column(db.String(256))
 
     uuid = db.Column(db.String(120))
 
