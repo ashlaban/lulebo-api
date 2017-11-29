@@ -1,5 +1,6 @@
 import collections
 import json
+import uuid
 import werkzeug
 
 from flask import Response
@@ -77,6 +78,7 @@ def add_user(db, user):
             username=username,
             password=password,
             email=email,
+            uuid=str(uuid.uuid4()),
             lulebo_username=lulebo_username,
             lulebo_password=lulebo_password
         )
