@@ -19,6 +19,7 @@
 
 import argparse
 import json
+import sys
 
 parser = argparse.ArgumentParser(description='Manage database.')
 
@@ -125,8 +126,13 @@ if args.command == 'add':
             for user in users:
                 add_user(db, user)
 
+if args.command == 'rem':
+    print ('Not implemented yet')
+    sys.exit(0)
+
 if args.command == 'list':
-    pass
+    print ('Not implemented yet')
+    sys.exit(0)
 
 if args.command == 'find':
     if args.username is not None:
