@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8060f39935ee091310efa63feebb812197b5bda9f69157a03e7ad572d22ee163"
+            "sha256": "03948cf6d7c7efda10ba98e8a9f6e0a87b4ab091ad109abfca97a539b2a93413"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -16,7 +16,7 @@
             "python_version": "3.6",
             "sys_platform": "darwin"
         },
-        "pipfile-spec": 3,
+        "pipfile-spec": 6,
         "requires": {
             "python_version": "3.6"
         },
@@ -121,6 +121,12 @@
                 "sha256:cc44da8e1145637334317feebd728bd869a35285b93cbb4cca2577da7e62db4f"
             ],
             "version": "==1.22"
+        },
+        "uwsgi": {
+            "hashes": [
+                "sha256:572ef9696b97595b4f44f6198fe8c06e6f4e6351d930d22e5330b071391272ff"
+            ],
+            "version": "==2.0.15"
         },
         "voluptuous": {
             "hashes": [
