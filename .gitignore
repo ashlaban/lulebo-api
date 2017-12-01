@@ -1,6 +1,7 @@
 # project
 log/
 initial-users.json
+uwsgi.ini
 *.db
 
 # python
