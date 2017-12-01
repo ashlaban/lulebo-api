@@ -1,7 +1,11 @@
 
 from backend import db
+from config import LULEBO_SECRET_KEY
 
+from cryptography.fernet import Fernet
 from werkzeug.security import generate_password_hash, check_password_hash
+
+crypto = Fernet(LULEBO_SECRET_KEY)
 
 # TODO: What is index=True?
 
@@ -14,11 +18,35 @@ class User(db.Model):
     password = db.Column(db.String(160) , unique=False)
     email    = db.Column(db.String(120) , unique=True)
 
-    lulebo_username   = db.Column(db.String(120))
-    lulebo_password   = db.Column(db.String(120))
-    lulebo_session_id = db.Column(db.String(256))
+    lulebo_username_cipher = db.Column(db.String(120))
+    lulebo_password_cipher = db.Column(db.String(120))
+    lulebo_session_id      = db.Column(db.String(256))
 
     uuid = db.Column(db.String(120))
+
+    @property
+    def lulebo_password(self):
+        cipher_bytes = str.encode(self.lulebo_password_cipher, 'utf-8')
+        clear_bytes  = crypto.decrypt(cipher_bytes)
+        return clear_bytes.decode('utf-8')
+
+    @lulebo_password.setter
+    def lulebo_password(self, val):
+        clear_bytes  = str.encode(val, 'utf-8')
+        cipher_bytes = crypto.encrypt(clear_bytes)
+        self.lulebo_password_cipher = cipher_bytes.decode('utf-8')
+
+    @property
+    def lulebo_username(self):
+        cipher_bytes = str.encode(self.lulebo_username_cipher, 'utf-8')
+        clear_bytes  = crypto.decrypt(cipher_bytes)
+        return clear_bytes.decode('utf-8')
+
+    @lulebo_password.setter
+    def lulebo_username(self, val):
+        clear_bytes  = str.encode(val, 'utf-8')
+        cipher_bytes = crypto.encrypt(clear_bytes)
+        self.lulebo_username_cipher = cipher_bytes.decode('utf-8')
 
     @staticmethod
     def authenticate(name, password):

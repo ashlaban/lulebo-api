@@ -1,5 +1,7 @@
 import os
 
+from base64 import urlsafe_b64encode
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 def gen_db_path(db_name):
@@ -7,8 +9,9 @@ def gen_db_path(db_name):
 
 WTF_CSRF_ENABLED = False
 
-#Change and place in untracked file on prod server!
+# Change and place in untracked file on prod server!
 SECRET_KEY = 'very-secret'
+LULEBO_SECRET_KEY = urlsafe_b64encode(b'very-secret                     ')
 
 WEB_PORT_BACKEND  = 8081
 WEB_PORT_FRONTEND = 8080

@@ -19,6 +19,7 @@ flask-sqlalchemy = "*"
 requests = "*"
 flask-testing = "*"
 uwsgi = "*"
+cryptography = "*"
 
 
 [requires]
