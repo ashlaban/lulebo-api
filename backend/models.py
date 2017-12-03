@@ -42,7 +42,7 @@ class User(db.Model):
         clear_bytes  = crypto.decrypt(cipher_bytes)
         return clear_bytes.decode('utf-8')
 
-    @lulebo_password.setter
+    @lulebo_username.setter
     def lulebo_username(self, val):
         clear_bytes  = str.encode(val, 'utf-8')
         cipher_bytes = crypto.encrypt(clear_bytes)
