@@ -3,6 +3,8 @@ log/
 initial-users.json
 uwsgi.ini
 *.db
+.env
+.venv
 
 # python
 __pycache__/
