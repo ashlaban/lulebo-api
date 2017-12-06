@@ -105,10 +105,10 @@ parser_recreate.add_argument('--db',
 parser_recreate.set_defaults(command='recreate')
 
 parser_destroy = subparsers.add_parser('destroy', help='')
-parser_recreate.add_argument('--db',
-                             default='app',
-                             help='Database name (default: app)'
-                             )
+parser_destroy.add_argument('--db',
+                            default='app',
+                            help='Database name (default: app)'
+                            )
 parser_destroy.set_defaults(command='destroy')
 
 args = parser.parse_args()
