@@ -69,6 +69,12 @@ def signup():
     try   : passvalid = json_data['passvalid']
     except: return util.make_json_error(msg='Missing password validation')
 
+    # Optional
+    try   : lulebo_username = json_data['lulebo_username']
+    except: lulebo_username = None
+    try   : lulebo_password = json_data['lulebo_password']
+    except: lulebo_password = None
+
     # Validation
     if password != passvalid:
         return util.make_json_error(msg='Passwords don\'t match')
@@ -88,20 +94,18 @@ def signup():
         username  = username ,
         email     = email    ,
         password  = password ,
-        lulebo_username = '' ,
-        lulebo_password = '' ,
+        lulebo_username = lulebo_username if lulebo_username is not None else '',
+        lulebo_password = lulebo_password if lulebo_password is not None else '',
         uuid = str(uuid.uuid4())
     )
 
     try:
         db.session.add(user)
         db.session.commit()
-        msg = 'Success'
-        status = 'ok'
+        msg, status = 'Success', 'ok'
     except Exception as e:
-        print(e)
-        msg = 'unknown error'
-        status = 'error'
+        db.session.rollback()
+        msg, status = 'unknown error', 'error'
     db.session.close()
     return jsonify({'msg': msg, 'status': status})
 
@@ -164,9 +168,9 @@ def say_secret_hi():
 # ==============================================================================
 
 # Gives info about user object
-@backend_api.route('/u')
+@backend_api.route('/u', methods=['GET'])
 @login_required
-def user_info():
+def user_info_get():
     '''
     Login by
         ```
@@ -200,10 +204,58 @@ def user_info():
     '''
 
     data = {
-        'username': current_user.username,
-        'email':current_user.email,
-        'uuid':current_user.uuid
+        'username'       : current_user.username,
+        'email'          : current_user.email,
+        'lulebo_username': current_user.lulebo_username,
+        'lulebo_password': current_user.lulebo_password,
+        'uuid'           : current_user.uuid
     }
+
+    return util.make_json_success(msg='', data=data)
+
+@backend_api.route('/u', methods=['PATCH'])
+@login_required
+def user_info_update():
+    json_data = request.get_json()
+
+    ## TODO: If json_data is not dict, error
+    print(json_data)
+
+    try   : current_user.email = json_data['email']
+    except: pass
+    try   : current_user.lulebo_username = json_data['lulebo_username']
+    except: pass
+    try   : current_user.lulebo_password = json_data['lulebo_password']
+    except: pass
+
+    try   : password        = json_data['password']
+    except: password        = None
+    try   : passvalid       = json_data['passvalid']
+    except: passvalid       = None
+
+    if password is not None:
+        if password == passvalid:
+            current_user.password = password
+        else:
+            return util.make_json_error(msg='Passwords don\'t match')
+
+    print('=== CURRENT USER ===')
+    print(current_user.username)
+    print(current_user.password)
+    print(current_user.email)
+    print(current_user.lulebo_username)
+    print(current_user.lulebo_password)
+
+    try:
+        db.session.add(current_user)
+        db.session.commit()
+        msg, status = 'Success', 'ok'
+    except Exception as e:
+        db.session.rollback()
+        msg, status = 'unknown error', 'error'
+        print (e)
+    db.session.close()
+    return jsonify({'msg': msg, 'status': status})
 
     return util.make_json_success(msg='', data=data)
 
