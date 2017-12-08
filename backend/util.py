@@ -13,9 +13,11 @@ def make_auth_challenge(msg='Authentication required'):
 def make_json_error(msg='', status_code=400, error_code=''):
     response = {
         'status'     : 'error',
-        'error_code' : error_code,
         'msg'        : msg,
     }
+
+    if error_code is not None and error_code != '':
+        response['error_code'] = error_code
 
     # return jsonify(response), status_code
     return json.dumps(response), status_code
@@ -27,7 +29,7 @@ def make_json_success(data=None, msg='', status_code=200, error_code=''):
             'msg'   : msg,
         }
 
-    if error_code is not '':
+    if error_code is not None and error_code != '':
         response['error_code'] = error_code
 
     if data is not None:
@@ -119,27 +121,27 @@ def lulebo_login(user):
 def lulebo_session_info(session_id):
     r = LuleboApi.Session.getSessionStatus(session_id)
     data = r.json()['d']
-    return make_json_success(data=data)
+    return data
 
 def lulebo_site_info(session_id):
     r = LuleboApi.MV.getSiteInfo(session_id)
     data = r.json()['d']
-    return make_json_success(data=data)
+    return data
 
 def lulebo_object_info(session_id):
     r = LuleboApi.MV.getObjectInfo(session_id)
     data = r.json()['d']
-    return make_json_success(data=data)
+    return data
 
 def lulebo_object_status(session_id):
     r = LuleboApi.MV.queryObjectStatus(session_id)
     data = r.json()['d']
-    return make_json_success(data=data)
+    return data
 
 def lulebo_direct_start(session_id):
     r = LuleboApi.MV.directStartObject(session_id)
     data = r.json()['d']
-    return make_json_success(data=data)
+    return data
 
 
 

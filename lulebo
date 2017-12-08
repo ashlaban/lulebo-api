@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 
 import argparse
+import inspect
 import getpass
 import keyring
 import requests
 import sys
+
+from json.decoder import JSONDecodeError
+from requests.exceptions import ConnectionError
+
+
+def debug_print(msg):
+    frame_info = inspect.stack()[1]
+    file = frame_info.filename
+    line = frame_info.lineno
+    fn = frame_info.function
+    print('{}:{}::{}  {}'.format(file, line, fn, msg))
 
 
 class UserInfo(object):
@@ -12,8 +24,9 @@ class UserInfo(object):
     def __init__(self, username, password):
         try:
             user_info = self._get(username, password)
-        except Exception as e:
-            raise e
+        except JSONDecodeError as e:
+            print('Error retrieving data from server')
+            sys.exit(1)
 
         self.username = username
         self.email = user_info['email']
@@ -21,13 +34,22 @@ class UserInfo(object):
         self.uuid = user_info['uuid']
 
     def _get(self, username=None, password=None):
+        url = url_generator.generate(endpoint='u')
+        if args.debug: debug_print(url)
+
         if username is None or password is None:
             # Assumed user is logged in via cookie
-            r = requests.get('http://localhost:8081/u')
+            r = requests.get(url)
         else:
             # HTTPS basic auth
-            r = requests.get('http://localhost:8081/u',
-                             auth=(username, password))
+            r = requests.get(url, auth=(username, password))
+
+        if args.debug:
+            try:
+                r.json()
+            except JSONDecodeError:
+                debug_print(r.text)
+
         return r.json()['data']
 
     def print_user_info(self):
@@ -59,29 +81,44 @@ class UrlGenerator(object):
     def __init__(self, base_url='https://lulebo.ash.nu'):
         self.base_url = base_url
 
+        self.prefix = {
+            'signup': '',
+            'login': 'lulebo',
+            'u': '',
+            'cord': 'lulebo',
+            'direct-start': 'lulebo',
+            'object-status': 'lulebo',
+            'object-info': 'lulebo',
+            'site-info': 'lulebo',
+            'session-info': 'lulebo'
+        }
+
     def generate(self, endpoint, uuid=None):
-
-        site = ['signup', 'login', 'u']
-        heater = ['direct-start', 'object-status', 'object-info',
-                  'site-info', 'session-info']
-
-        if endpoint not in site and endpoint not in heater:
+        if endpoint not in self.prefix:
             raise ValueError('Endpoint "{}" does not exist'.format(endpoint))
 
-        if uuid is None:
-            url = '{base_url}/lulebo/{endpoint}'.format(
-                base_url=self.base_url, endpoint=endpoint)
+        elif uuid is None:
+            prefix = self.prefix[endpoint]
+            if prefix != '':
+                url = '{base_url}/{prefix}/{endpoint}'.format(
+                    base_url=self.base_url, prefix=prefix, endpoint=endpoint)
+            else:
+                url = '{base_url}/{endpoint}'.format(
+                    base_url=self.base_url, endpoint=endpoint)
         else:
             url = '{base_url}/u/{uuid}/{endpoint}'.format(
                 base_url=self.base_url, uuid=uuid, endpoint=endpoint)
         return url
 
-    def print_url(self, uuid=None, endpoint='heater_start'):
+    def print_url(self, uuid=None, endpoint='heater_start',
+                  verbose_message=None):
         url = self.generate(uuid=uuid, endpoint=endpoint)
 
         if args.verbose:
+            if verbose_message is None:
+                raise ValueError('verbose_message cannot be None')
             print()
-            print('[TODO] Info text goes here:')
+            print('{}:'.format(verbose_message))
             print(url)
             print()
         else:
@@ -94,56 +131,48 @@ class LuleboException(Exception):
 
 
 class LuleboMissingCredentialsException(LuleboException):
-    '''
-'''
+    ''''''
 
 
-def ask_username(prompt='Username: ', username=None):
-    if username is None:
+def get_email(prompt='E-mail: '):
+    try: return input(prompt)
+    except: return None
+
+
+def get_username(prompt='Username: ', username=None, force=False):
+    if force:
+        try: return input(prompt)
+        except: return None
+    elif username is None:
         return getpass.getuser()
     else:
         return username
 
 
-def ask_password(prompt='Password', username=None):
+def get_password(prompt='Password', username=None, force=False):
     if username is None:
-        raise LuleboMissingCredentialsException('Missing username')
-
-    password = keyring.get_password('system', username)
-
-    if password is None:
+        prompt = '{}: '.format(prompt)
+    else:
         prompt = '{} for {}: '.format(prompt, username)
+
+    if force or username is None:
         password = getpass.getpass(prompt)
-        if args.save_password:
-            keyring.set_password('system', username, password)
+    else:
+        password = keyring.get_password('system', username)
+
+        if password is None:
+            password = getpass.getpass(prompt)
+            if args.save_password:
+                keyring.set_password('system', username, password)
 
     return password
 
 
 def get_user_pass(username=None, password=None):
-    username = ask_username(username=username)
-    password = ask_password(username=username)
+    username = get_username(username=username)
+    password = get_password(username=username)
 
     return username, password
-
-
-def _ask(prompt):
-    try:
-        return input(prompt)
-    except:
-        return None
-
-
-def ask_email(prompt='E-mail: '):
-    return _ask(prompt)
-
-
-def ask_lulebo_username(prompt='Username (Lulebo): '):
-    return _ask(prompt)
-
-
-def ask_lulebo_password(prompt='Password (Lulebo): '):
-    return getpass.getpass(prompt)
 
 
 def change(username, password, user):
@@ -152,12 +181,17 @@ def change(username, password, user):
 
     url = url_generator.generate(endpoint='u')
 
-    r = requests.patch(url,
-                       json=user,
-                       auth=(username, password)
-                       )
-    print(r.json())
+    r = requests.patch(url, json=user, auth=(username, password))
+    if args.debug: debug_print(r.json())
     return
+
+
+def signup(user):
+    url = url_generator.generate(endpoint='signup')
+
+    r = requests.post(url, json=user)
+    if args.debug: debug_print(r.json())
+    return r
 
 
 # lulebo signup
@@ -175,6 +209,17 @@ def change(username, password, user):
 # lulebo url heater-start
 #
 
+def add_default_args(parser):
+    parser.add_argument('--username', '--user', '-u', default=None, help='')
+    parser.add_argument('--password', '--pass', '-p', default=None, help='')
+    parser.add_argument('--email', '-e', default=None, help='')
+    parser.add_argument('--debug', '-D', action='store_true')
+    parser.add_argument('--dev', '-d', action='store_true')
+    parser.add_argument('--verbose', '-v', action='count')
+    parser.add_argument('--save-password', '-s', action='store_true')
+    parser.add_argument('--wipe-saved-password', action='store_true')
+
+
 parser = argparse.ArgumentParser(description='')
 
 subparsers = parser.add_subparsers()
@@ -184,19 +229,17 @@ parser_heater = subparsers.add_parser('heater', help='Control the car heater')
 parser_user = subparsers.add_parser('user', help='User something somet')
 parser_signup = subparsers.add_parser('signup', help='Register a new user')
 parser_url = subparsers.add_parser('url', help='Register a new user')
+add_default_args(parser_heater)
+add_default_args(parser_change)
+add_default_args(parser_signup)
+add_default_args(parser_user)
+add_default_args(parser_url)
 
 
 # Heater
 parser_heater.set_defaults(command='heater')
 parser_heater.add_argument('subcommand',
-                           choices=['start', 'status', 'info', 'site'])
-parser_heater.add_argument('--username', '--user', '-u', default=None, help='')
-parser_heater.add_argument('--password', '--pass', '-p', default=None, help='')
-parser_heater.add_argument('--email', '-e', default=None, help='')
-parser_heater.add_argument('--debug-output', action='count')
-parser_heater.add_argument('--debug', '-d', action='store_true')
-parser_heater.add_argument('--verbose', '-v', action='count')
-parser_heater.add_argument('--save-password', '-s', action='store_true')
+                           choices=['start', 'status', 'info', 'site', 'cord'])
 
 # Change
 parser_change.set_defaults(command='change')
@@ -204,23 +247,9 @@ parser_change.add_argument('key',
                            nargs='*',
                            choices=['password', 'email',
                                     'lulebo.username', 'lulebo.password'])
-parser_change.add_argument('--username', '--user', '-u', default=None, help='')
-parser_change.add_argument('--password', '--pass', '-p', default=None, help='')
-parser_change.add_argument('--email', '-e', default=None, help='')
-parser_change.add_argument('--debug-output', action='count')
-parser_change.add_argument('--debug', '-d', action='store_true')
-parser_change.add_argument('--verbose', '-v', action='count')
-parser_change.add_argument('--save-password', '-s', action='store_true')
 
 # Signup
 parser_signup.set_defaults(command='signup')
-parser_signup.add_argument('--username', '--user', '-u', default=None, help='')
-parser_signup.add_argument('--password', '--pass', '-p', default=None, help='')
-parser_signup.add_argument('--email', '-e', default=None, help='')
-parser_signup.add_argument('--debug-output', action='count')
-parser_signup.add_argument('--debug', '-d', action='store_true')
-parser_signup.add_argument('--verbose', '-v', action='count')
-parser_signup.add_argument('--save-password', '-s', action='store_true')
 
 # Info
 parser_user.set_defaults(command='user')
@@ -228,41 +257,47 @@ parser_user.add_argument('subcommand',
                          nargs='?',
                          choices=['info', 'uuid', 'email'],
                          default='info')
-parser_user.add_argument('--username', '--user', '-u', default=None, help='')
-parser_user.add_argument('--password', '--pass', '-p', default=None, help='')
-parser_user.add_argument('--email', '-e', default=None, help='')
-parser_user.add_argument('--debug-output', action='count')
-parser_user.add_argument('--debug', '-d', action='store_true')
-parser_user.add_argument('--verbose', '-v', action='count')
-parser_user.add_argument('--save-password', '-s', action='store_true')
 
 # url
 parser_url.set_defaults(command='url')
 parser_url.add_argument('subcommand',
-                         choices=['start', 'info', 'status', 'site'])
-parser_url.add_argument('--username', '--user', '-u', default=None, help='')
-parser_url.add_argument('--password', '--pass', '-p', default=None, help='')
-parser_url.add_argument('--email', '-e', default=None, help='')
-parser_url.add_argument('--debug-output', action='count')
-parser_url.add_argument('--debug', '-d', action='store_true')
-parser_url.add_argument('--verbose', '-v', action='count')
-parser_url.add_argument('--save-password', '-s', action='store_true')
+                        choices=['start', 'info', 'status', 'site'])
 
 args = parser.parse_args()
-if args.debug_output:
-    print('Arguments:')
-    print(args)
-    print()
-
 if args.debug:
+    debug_print(args)
+
+if args.dev:
     url_generator = UrlGenerator('http://localhost:8081')
 else:
     url_generator = UrlGenerator()
+
+if args.wipe_saved_password:
+    username = get_username(username=args.username)
+    keyring.delete_password('system', username)
+    print('Stored password for user "{}"" removed'.format(username))
+    sys.exit(0)
 
 try:
     if args.command == 'heater':
         username, password = get_user_pass(args.username, args.password)
         userinfo = UserInfo(username, password)
+
+        if args.subcommand == 'cord':
+            url = url_generator.generate(uuid=userinfo.uuid,
+                                         endpoint='cord')
+
+            print('Warning: This operation may take up to a minute to complete')
+
+            r = requests.get(url)
+            data = r.json()
+
+            if args.debug: debug_print(data)
+
+            if data['data']['cordConnected']:
+                print('Cord is connected')
+            else:
+                print('Cord is _not_ connected')
 
         if args.subcommand == 'start':
             url = url_generator.generate(uuid=userinfo.uuid,
@@ -289,8 +324,37 @@ try:
             print(r.json())
 
     if args.command == 'signup':
-        print('Not implemented yet')
-        sys.exit(0)
+        username = get_username(username=args.username)
+
+        user = {}
+
+        user['username'] = username
+
+        val = get_password(prompt='Password', username=username)
+        validation = get_password(prompt='Validate password',
+                                  username=username, force=True)
+
+        if val == validation and val is not None:
+            user['password'] = val
+            user['passvalid'] = validation
+        else:
+            print('Passwords mismatch')
+            sys.exit(-1)
+
+        val = get_email(prompt='e-mail: ')
+        if val is not None:
+            user['email'] = val
+
+        val = get_username(prompt='lulebo.username: ', force=True)
+        if val is not None:
+            user['lulebo_username'] = val
+
+        val = get_password(prompt='lulebo.password: ', force=True)
+        if val is not None:
+            user['lulebo_password'] = val
+
+        r = signup(user)
+        print(r.text)
 
     if args.command == 'change':
         username, password = get_user_pass(args.username, args.password)
@@ -298,27 +362,28 @@ try:
         user = {}
 
         if 'password' in args.key:
-            val = ask_password(prompt='New password')
-            validation = ask_password(prompt='Validate password')
+            val = get_password(prompt='New password')
+            validation = get_password(prompt='Validate password')
 
             if val == validation and val is not None:
                 user['password'] = val
+                user['passvalid'] = validation
             else:
                 print('Passwords mismatch')
                 sys.exit(-1)
 
         if 'email' in args.key:
-            val = ask_email(prompt='New e-mail: ')
+            val = get_email(prompt='New e-mail: ')
             if val is not None:
                 user['email'] = val
 
         if 'lulebo.username' in args.key:
-            val = ask_lulebo_username(prompt='New lulebo.username: ')
+            val = get_username(prompt='New lulebo.username: ', force=True)
             if val is not None:
                 user['lulebo_username'] = val
 
         if 'lulebo.password' in args.key:
-            val = ask_lulebo_password(prompt='New lulebo.password: ')
+            val = get_password(prompt='New lulebo.password: ', force=True)
             if val is not None:
                 user['lulebo_password'] = val
 
@@ -339,20 +404,44 @@ try:
         userinfo = UserInfo(username, password)
 
         if args.subcommand == 'start':
-            url_generator.print_url(uuid=userinfo.uuid,
-                                    endpoint='direct-start')
+            url_generator.print_url(
+                uuid=userinfo.uuid,
+                endpoint='direct-start',
+                verbose_message='Loginless link to start engine heater'
+            )
 
         if args.subcommand == 'info':
-            url_generator.print_url(uuid=userinfo.uuid,
-                                    endpoint='object-info')
+            url_generator.print_url(
+                uuid=userinfo.uuid,
+                endpoint='object-info',
+                verbose_message='Advanced use'
+                )
 
         if args.subcommand == 'status':
-            url_generator.print_url(uuid=userinfo.uuid,
-                                    endpoint='object-status')
+            url_generator.print_url(
+                uuid=userinfo.uuid,
+                endpoint='object-status',
+                verbose_message='Advanced use'
+                )
 
         if args.subcommand == 'site':
-            url_generator.print_url(uuid=userinfo.uuid,
-                                    endpoint='site-info')
+            url_generator.print_url(
+                uuid=userinfo.uuid,
+                endpoint='site-info',
+                verbose_message='Advanced use'
+                )
 
 except KeyboardInterrupt:
+    # User pressed ctrl-c, exit program
     pass
+except JSONDecodeError:
+    print('ERROR: Error decoding server response. Try running in debug mode.')
+    sys.exit(1)
+except ConnectionError:
+    print('ERROR: Could not connect to server "{}"'.format(url_generator.base_url))
+    sys.exit(1)
+except Exception as e:
+    if args.debug:
+        raise(e)
+    else:
+        print('ERROR: Unknown exception occurred. :(')

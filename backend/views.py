@@ -294,27 +294,32 @@ def lulebo_auth_login():
 @backend_api.route('/lulebo/session-info')
 @login_required
 def lulebo_auth_session_info():
-    return util.lulebo_session_info(current_user.lulebo_session_id)
+    data = util.lulebo_session_info(current_user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/lulebo/site-info')
 @login_required
 def lulebo_auth_site_info():
-    return util.lulebo_site_info(current_user.lulebo_session_id)
+    data = util.lulebo_site_info(current_user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/lulebo/object-info')
 @login_required
 def lulebo_auth_object_info():
-    return util.lulebo_object_info(current_user.lulebo_session_id)
+    data = util.lulebo_object_info(current_user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/lulebo/object-status')
 @login_required
 def lulebo_auth_object_status():
-    return util.lulebo_object_status(current_user.lulebo_session_id)
+    data = util.lulebo_object_status(current_user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/lulebo/direct-start')
 @login_required
 def lulebo_auth_direct_start():
-    return util.lulebo_direct_start(current_user.lulebo_session_id)
+    data = util.lulebo_direct_start(current_user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 
 
@@ -333,28 +338,44 @@ def lulebo_unauth_login(user_uuid):
 @util.lulebo_retry_unauth
 def lulebo_unauth_session_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return util.lulebo_session_info(user.lulebo_session_id)
+    data = util.lulebo_session_info(user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/u/<uuid:user_uuid>/site-info')
 @util.lulebo_retry_unauth
 def lulebo_unauth_site_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return util.lulebo_site_info(user.lulebo_session_id)
+    data = util.lulebo_site_info(user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/u/<uuid:user_uuid>/object-info')
 @util.lulebo_retry_unauth
 def lulebo_unauth_object_info(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return util.lulebo_object_info(user.lulebo_session_id)
+    data = util.lulebo_object_info(user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/u/<uuid:user_uuid>/object-status')
 @util.lulebo_retry_unauth
 def lulebo_unauth_object_status(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return util.lulebo_object_status(user.lulebo_session_id)
+    data = util.lulebo_object_status(user.lulebo_session_id)
+    return util.make_json_success(data=data)
 
 @backend_api.route('/u/<uuid:user_uuid>/direct-start')
 @util.lulebo_retry_unauth
 def lulebo_unauth_direct_start(user_uuid):
     user = User.get_by_uuid(str(user_uuid))
-    return util.lulebo_direct_start(user.lulebo_session_id)
+    data = util.lulebo_direct_start(user.lulebo_session_id)
+    return util.make_json_success(data=data)
+
+@backend_api.route('/u/<uuid:user_uuid>/cord')
+@util.lulebo_retry_unauth
+def lulebo_unauth_cord(user_uuid):
+    user = User.get_by_uuid(str(user_uuid))
+    json = util.lulebo_object_status(user.lulebo_session_id)
+
+    is_connected = json['IsConnected']
+    data = dict(cordConnected=True if is_connected == '1' else False,
+                loginStatus=json['loginStatus'])
+    return util.make_json_success(data=data)
