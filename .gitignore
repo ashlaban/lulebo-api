@@ -10,6 +10,8 @@ uwsgi.ini
 __pycache__/
 *.pyc
 *.egg-info
+build/
+dist/
 
 # macos
 .DS_Store
