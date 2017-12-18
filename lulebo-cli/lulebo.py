@@ -6,6 +6,7 @@ import getpass
 import keyring
 import requests
 import sys
+import textwrap
 
 from json.decoder import JSONDecodeError
 from requests.exceptions import ConnectionError
@@ -73,8 +74,8 @@ class UserInfo(object):
     # def __str__():
     #     pass
 
-    def __repr__():
-        return '<UserInfo {}>'.format(username)
+    def __repr__(self):
+        return '<UserInfo {}>'.format(self.username)
 
 
 class UrlGenerator(object):
@@ -212,42 +213,177 @@ def signup(user):
 #
 
 def add_default_args(parser):
-    parser.add_argument('--username', '--user', '-u', default=None, help='')
-    parser.add_argument('--password', '--pass', '-p', default=None, help='')
-    parser.add_argument('--email', '-e', default=None, help='')
-    parser.add_argument('--debug', '-D', action='store_true')
-    parser.add_argument('--dev', '-d', action='store_true')
-    parser.add_argument('--verbose', '-v', action='count')
-    parser.add_argument('--save-password', '-s', action='store_true')
-    parser.add_argument('--wipe-saved-password', action='store_true')
+    parser.add_argument(
+        '--username', '--user', '-u',
+        default=None,
+        help='If not specified it is taked from the system.')
+    parser.add_argument(
+        '--password', '--pass', '-p',
+        default=None,
+        help='Try to avoid using this since the password will be stored in '
+             'your shell history. Use --save-password instead.')
+    parser.add_argument(
+        '--email', '-e',
+        default=None,
+        help='If not specified here, it will be asked for if required.')
+    parser.add_argument(
+        '--debug', '-D',
+        action='store_true',
+        help='Adds printouts for troubleshooting.')
+    parser.add_argument(
+        '--dev', '-d',
+        action='store_true',
+        help='Connect to localhost instead of remote server.')
+    parser.add_argument(
+        '--verbose', '-v',
+        action='count',
+        help='Increase verbosity of output. Can be specified multiple times,'
+             ' such as `-vvv`.')
+    parser.add_argument(
+        '--save-password', '-s',
+        action='store_true',
+        help='Saves your username/password combination to the system keychain.'
+        )
+    parser.add_argument(
+        '--wipe-saved-password',
+        action='store_true',
+        help='Removes a specified username/password combination from the '
+             'system keychain.')
 
 
 def main():
     global args
     global url_generator
 
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            A simple command line interface for interacting with the Lulebo
+            API.
 
-    subparsers = parser.add_subparsers(dest='command')
+            To get usage information about specific commands use:
+                lulebo COMMAND --help
 
-    parser_change = subparsers.add_parser('change', help='User something somet')
-    parser_heater = subparsers.add_parser('heater', help='Control the car heater')
-    parser_user = subparsers.add_parser('user', help='User something somet')
-    parser_signup = subparsers.add_parser('signup', help='Register a new user')
-    parser_url = subparsers.add_parser('url', help='Register a new user')
+            Your first step should be to create a user account. Use
+            `lulebo signup --help` to get more information about account
+            creation.
 
+            After you have obtained valid credentials, you can try the service
+            out with:
+                lulebo user --username USER
 
-    # add_default_args(parser)
+            If your username is the same as your unix login you need only use
+                lulebo user
+
+            You can store your password in the system keychain by adding the
+            `--save-password` argument. This will save you from having to enter
+            your password all the time but is, of course, less secure.
+
+            An interesting feature is that you can generate an url for starting
+            the car heater without logging in. To do so, use:
+                lulebo url heater-start --username USER
+
+            This will generate a link which, when you visit with your broswer,
+            will start the car heater. An example is
+            ```
+            $ lulebo url heater-start -v
+
+            Loginless link to start engine heater:
+            https://lulebo.ash.nu/u/183f5bc3-pcf9-4316-b7fq-ac911a90e7bd/direct-start
+            ```
+
+            '''
+            )
+        )
+
+    subparsers = parser.add_subparsers(dest='command',
+                                       title='Commands',
+                                       # description='Valid actions'
+                                       )
+
+    parser_change = subparsers.add_parser(
+        'change',
+        help='Change settings for your user account.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            Change account settings such as password and credentials for the
+            Lulebo API.
+
+            Example usage:
+                lulebo change lulebo.password --username USER
+            ''')
+    )
+    parser_heater = subparsers.add_parser(
+        'heater',
+        help='Control the car heater.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            Control and query information about the car heater.
+
+            The cart heater can be started with:
+                lulebo heater start --username USER
+
+            Information about the power cord connection status:
+                lulebo heater cord --username USER
+            ''')
+        )
+    parser_user = subparsers.add_parser(
+        'user',
+        help='Retrieve information for your account.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            Query information about your accout.
+
+            Example usage:
+                lulebo user --username USER
+            ''')
+        )
+    parser_signup = subparsers.add_parser(
+        'signup',
+        help='Register a new account.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            Create a new account at lulebo.ash.nu. Note that to fully use this
+            service you need to give your Lulebo createnditals to a service
+            external to Lulebo (lulebo.ash.nu).
+
+            If you are not comfortable exposing your password to a third-party;
+            DO NOT USE THIS SERVICE.
+
+            Example usage:
+                lulebo signup --username USER
+            ''')
+        )
+    parser_url = subparsers.add_parser(
+        'url',
+        help='Retrive useful urls, for example for login-less activation of'
+             'the car heater.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            '''\
+            Retrive useful urls, for example for login-less activation of the
+            car heater.
+
+            Example usage:
+                lulebo url heater-start --username USER
+            ''')
+        )
+
     add_default_args(parser_heater)
     add_default_args(parser_change)
     add_default_args(parser_signup)
     add_default_args(parser_user)
     add_default_args(parser_url)
 
-
     # Heater
     parser_heater.add_argument('subcommand',
-                               choices=['start', 'status', 'info', 'site', 'cord'])
+                               choices=['start', 'status', 'info', 'site',
+                                        'cord'])
 
     # Change
     parser_change.add_argument('key',
@@ -265,7 +401,7 @@ def main():
 
     # url
     parser_url.add_argument('subcommand',
-                            choices=['start', 'info', 'status', 'site'])
+                            choices=['heater-start', 'info', 'status', 'site'])
 
     args = parser.parse_args()
 
@@ -296,7 +432,8 @@ def main():
                 url = url_generator.generate(uuid=userinfo.uuid,
                                              endpoint='cord')
 
-                print('Warning: This operation may take up to a minute to complete')
+                print('Warning: This operation may take up to a minute to'
+                      ' complete')
 
                 r = requests.get(url)
                 data = r.json()
@@ -412,7 +549,7 @@ def main():
             username, password = get_user_pass(args.username, args.password)
             userinfo = UserInfo(username, password)
 
-            if args.subcommand == 'start':
+            if args.subcommand == 'heater-start':
                 url_generator.print_url(
                     uuid=userinfo.uuid,
                     endpoint='direct-start',
@@ -444,16 +581,19 @@ def main():
         # User pressed ctrl-c, exit program
         pass
     except JSONDecodeError:
-        print('ERROR: Error decoding server response. Try running in debug mode.')
+        print('ERROR: Error decoding server response. Try running in debug'
+              ' mode.')
         sys.exit(1)
     except ConnectionError:
-        print('ERROR: Could not connect to server "{}"'.format(url_generator.base_url))
+        print('ERROR: Could not connect to server "{}"'.format(
+            url_generator.base_url))
         sys.exit(1)
     # except Exception as e:
     #     if args.debug:
     #         raise(e)
     #     else:
     #         print('ERROR: Unknown exception occurred. :(')
+
 
 url_generator = None
 args = None
