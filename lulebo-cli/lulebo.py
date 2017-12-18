@@ -222,13 +222,16 @@ def add_default_args(parser):
 
 parser = argparse.ArgumentParser(description='')
 
-subparsers = parser.add_subparsers()
+subparsers = parser.add_subparsers(dest='command')
 
 parser_change = subparsers.add_parser('change', help='User something somet')
 parser_heater = subparsers.add_parser('heater', help='Control the car heater')
 parser_user = subparsers.add_parser('user', help='User something somet')
 parser_signup = subparsers.add_parser('signup', help='Register a new user')
 parser_url = subparsers.add_parser('url', help='Register a new user')
+
+
+# add_default_args(parser)
 add_default_args(parser_heater)
 add_default_args(parser_change)
 add_default_args(parser_signup)
@@ -237,33 +240,33 @@ add_default_args(parser_url)
 
 
 # Heater
-parser_heater.set_defaults(command='heater')
 parser_heater.add_argument('subcommand',
                            choices=['start', 'status', 'info', 'site', 'cord'])
 
 # Change
-parser_change.set_defaults(command='change')
 parser_change.add_argument('key',
                            nargs='*',
                            choices=['password', 'email',
                                     'lulebo.username', 'lulebo.password'])
 
 # Signup
-parser_signup.set_defaults(command='signup')
 
 # Info
-parser_user.set_defaults(command='user')
 parser_user.add_argument('subcommand',
                          nargs='?',
                          choices=['info', 'uuid', 'email'],
                          default='info')
 
 # url
-parser_url.set_defaults(command='url')
 parser_url.add_argument('subcommand',
                         choices=['start', 'info', 'status', 'site'])
 
 args = parser.parse_args()
+
+if args.command is None:
+    parser.print_help()
+    sys.exit(1)
+
 if args.debug:
     debug_print(args)
 
@@ -440,8 +443,8 @@ except JSONDecodeError:
 except ConnectionError:
     print('ERROR: Could not connect to server "{}"'.format(url_generator.base_url))
     sys.exit(1)
-except Exception as e:
-    if args.debug:
-        raise(e)
-    else:
-        print('ERROR: Unknown exception occurred. :(')
+# except Exception as e:
+#     # if args.debug:
+#         raise(e)
+#     # else:
+#         print('ERROR: Unknown exception occurred. :(')
