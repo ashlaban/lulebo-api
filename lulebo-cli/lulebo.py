@@ -134,13 +134,15 @@ class LuleboMissingCredentialsException(LuleboException):
     ''''''
 
 
-def get_email(prompt='E-mail: '):
+def get_email(prompt='E-mail'):
+    prompt = '{}: '.format(prompt)
     try: return input(prompt)
     except: return None
 
 
-def get_username(prompt='Username: ', username=None, force=False):
+def get_username(prompt='Username', username=None, force=False):
     if force:
+        prompt = '{}: '.format(prompt)
         try: return input(prompt)
         except: return None
     elif username is None:
@@ -348,15 +350,15 @@ def main():
                 print('Passwords mismatch')
                 sys.exit(-1)
 
-            val = get_email(prompt='e-mail: ')
+            val = get_email(prompt='e-mail')
             if val is not None:
                 user['email'] = val
 
-            val = get_username(prompt='lulebo.username: ', force=True)
+            val = get_username(prompt='lulebo.username', force=True)
             if val is not None:
                 user['lulebo_username'] = val
 
-            val = get_password(prompt='lulebo.password: ', force=True)
+            val = get_password(prompt='lulebo.password', force=True)
             if val is not None:
                 user['lulebo_password'] = val
 
@@ -380,17 +382,17 @@ def main():
                     sys.exit(-1)
 
             if 'email' in args.key:
-                val = get_email(prompt='New e-mail: ')
+                val = get_email(prompt='New e-mail')
                 if val is not None:
                     user['email'] = val
 
             if 'lulebo.username' in args.key:
-                val = get_username(prompt='New lulebo.username: ', force=True)
+                val = get_username(prompt='New lulebo.username', force=True)
                 if val is not None:
                     user['lulebo_username'] = val
 
             if 'lulebo.password' in args.key:
-                val = get_password(prompt='New lulebo.password: ', force=True)
+                val = get_password(prompt='New lulebo.password', force=True)
                 if val is not None:
                     user['lulebo_password'] = val
 
