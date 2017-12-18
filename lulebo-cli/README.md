@@ -6,7 +6,7 @@ To create a user with the service use:
 lulebo signup
 ```
 
-After a user has been created, verify that you can log in with it.
+After a user has been created, verify that you can log in with:
 ```
 lulebo url heater-start --username your_name
 ```

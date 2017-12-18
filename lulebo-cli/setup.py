@@ -8,9 +8,16 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-# Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+# Trick from `https://stackoverflow.com/questions/26737222/#26737672` to
+# convert markdown to reStructuredText before upload.
+path_readme = path.join(here, 'README.md')
+try:
+    import pypandoc
+    long_description = pypandoc.convert(path_readme, 'rst')
+except(IOError, ImportError):
+    # Get the long description from the README file
+    with open(path_readme, encoding='utf-8') as f:
+        long_description = f.read()
 
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
