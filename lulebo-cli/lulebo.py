@@ -8,7 +8,11 @@ import requests
 import sys
 import textwrap
 
-from json.decoder import JSONDecodeError
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
+
 from requests.exceptions import ConnectionError
 
 
